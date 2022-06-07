@@ -80,6 +80,7 @@ namespace NbtStudio
                 () => TryCreateFromSnbt(path), // SNBT
                 () => TryCreateFromNbt(path, NbtCompression.AutoDetect, big_endian: true), // java files
                 () => TryCreateFromNbt(path, NbtCompression.AutoDetect, big_endian: false), // bedrock files
+                () => TryCreateFromNbt(path, NbtCompression.AutoDetect, varint: true), // some other bedrock files
                 () => TryCreateFromNbt(path, NbtCompression.AutoDetect, big_endian: false, bedrock_header: true) // bedrock level.dat files
             };
             return TryVariousMethods(methods, x => LooksSuspicious(x.RootTag));
@@ -132,9 +133,9 @@ namespace NbtStudio
             }
         }
 
-        public static Failable<NbtFile> TryCreateFromNbt(string path, NbtCompression compression, bool big_endian = true, bool bedrock_header = false)
+        public static Failable<NbtFile> TryCreateFromNbt(string path, NbtCompression compression, bool big_endian = true, bool bedrock_header = false, bool varint = false)
         {
-            return new Failable<NbtFile>(() => CreateFromNbt(path, compression, big_endian, bedrock_header), $"Load as NBT (compression: {compression}, big endian: {big_endian}, bedrock header: {bedrock_header})");
+            return new Failable<NbtFile>(() => CreateFromNbt(path, compression, big_endian, bedrock_header, varint), $"Load as NBT (compression: {compression}, big endian: {big_endian}, bedrock header: {bedrock_header}, varint: {varint})");
         }
 
         public static Failable<NbtFile> TryCreateFromExportSettings(string path, ExportSettings settings)
@@ -145,10 +146,11 @@ namespace NbtStudio
                 return TryCreateFromNbt(path, settings.Compression, settings.BigEndian, settings.BedrockHeader);
         }
 
-        public static NbtFile CreateFromNbt(string path, NbtCompression compression, bool big_endian = true, bool bedrock_header = false)
+        public static NbtFile CreateFromNbt(string path, NbtCompression compression, bool big_endian = true, bool bedrock_header = false, bool varint = false)
         {
             var file = new fNbt.NbtFile();
             file.BigEndian = big_endian;
+            file.UseVarInt = varint;
             using (var reader = File.OpenRead(path))
             {
                 if (bedrock_header)
